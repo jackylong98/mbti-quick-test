@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
+<title>MBTI 快测 · 交互原型（依据 PRD V1.0）</title>
+<style>
+  :root {
+    --brand-1: #7c3aed; --brand-2: #ec4899;
+    --ink: #1f2937; --ink-soft: #6b7280; --card: #fff;
+    --anno: #0ea5e9;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: linear-gradient(160deg, #eef2ff 0%, #fdf2f8 60%, #eff6ff 100%);
+    min-height: 100vh; color: var(--ink);
+  }
+
+  /* ===== 顶部工具栏 ===== */
+  .toolbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 10px 18px; background: rgba(255,255,255,.92);
+    box-shadow: 0 2px 12px rgba(31,41,55,.08); backdrop-filter: blur(6px);
+  }
+  .tb-title { font-weight: 800; font-size: 15px; }
+  .tb-ver { font-size: 11px; color: #fff; background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    padding: 2px 8px; border-radius: 99px; margin-left: 6px; font-weight: 600; }
+  .tb-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+  .tb-btn {
+    border: 1.5px solid #e2d9fb; background: #fff; color: var(--brand-1);
+    border-radius: 10px; padding: 6px 12px; font-size: 12.5px; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: all .15s ease;
+  }
+  .tb-btn:hover { border-color: var(--brand-1); }
+  .tb-btn.on { background: linear-gradient(135deg, var(--brand-1), var(--brand-2)); color: #fff; border-color: transparent; }
+  .tb-note { font-size: 11.5px; color: var(--ink-soft); width: 100%; }
+  .tb-note b { color: var(--brand-1); }
+
+  /* ===== 舞台 ===== */
+  .stage { display: flex; gap: 26px; justify-content: center; align-items: flex-start; padding: 26px 18px 60px; flex-wrap: wrap; }
+
+  /* ===== 手机壳 ===== */
+  .phone {
+    width: 414px; background: #111827; border-radius: 46px; padding: 12px;
+    box-shadow: 0 24px 60px rgba(31,41,55,.30), inset 0 0 0 2px #374151;
+    position: relative; flex-shrink: 0;
+  }
+  .notch {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 26px; background: #111827; border-radius: 0 0 16px 16px; z-index: 40;
+  }
+  .screen {
+    width: 390px; height: 780px; background: linear-gradient(160deg, #ede9fe 0%, #fdf2f8 55%, #eff6ff 100%);
+    border-radius: 36px; overflow-y: auto; overflow-x: hidden; position: relative;
+    scrollbar-width: none;
+  }
+  .screen::-webkit-scrollbar { display: none; }
+  .homebar {
+    position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 4px; border-radius: 99px; background: rgba(255,255,255,.9); z-index: 40;
+    mix-blend-mode: difference; pointer-events: none;
+  }
+
+  /* ===== 页面通用 ===== */
+  .pg { display: none; padding: 40px 16px 34px; animation: fadein .3s ease; }
+  .pg.active { display: block; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .app-logo {
+    text-align: center; font-weight: 800; font-size: 15px; letter-spacing: 2px; padding: 2px 0 12px;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .card { background: var(--card); border-radius: 20px; box-shadow: 0 12px 32px rgba(124,58,237,.10); padding: 24px 18px; }
+  .btn {
+    display: block; width: 100%; border: none; cursor: pointer; border-radius: 16px;
+    padding: 15px; font-size: 16px; font-weight: 700; font-family: inherit; transition: transform .12s ease;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { color: #fff; background: linear-gradient(135deg, var(--brand-1), var(--brand-2)); box-shadow: 0 10px 24px rgba(124,58,237,.35); }
+  .btn-ghost { color: var(--brand-1); background: #fff; border: 1.5px solid #ddd6fe; margin-top: 12px; }
+  .btn-sub { padding: 12px; font-size: 14px; }
+  .tips { margin-top: 16px; color: var(--ink-soft); font-size: 11.5px; text-align: center; line-height: 1.9; }
+
+  /* 首页 */
+  .hero { text-align: center; padding: 34px 20px 26px; }
+  .hero-emoji { width: 84px; height: 84px; margin: 0 auto 16px; border-radius: 26px;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    display: flex; align-items: center; justify-content: center; font-size: 44px;
+    box-shadow: 0 14px 30px rgba(124,58,237,.30); }
+  .hero h1 { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
+  .hero p { color: var(--ink-soft); font-size: 14px; line-height: 1.7; }
+
+  /* 答题 */
+  .quiz-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .quiz-count { font-size: 12.5px; color: var(--ink-soft); font-weight: 600; }
+  .quiz-back { background: none; border: none; color: var(--ink-soft); font-size: 13px; cursor: pointer; padding: 8px 2px; font-family: inherit; }
+  .quiz-back:disabled { opacity: .35; cursor: default; }
+  .progress { height: 8px; background: #ede9fe; border-radius: 99px; overflow: hidden; margin-bottom: 22px; }
+  .progress-bar { height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, var(--brand-1), var(--brand-2)); transition: width .3s ease; }
+  .question { font-size: 17.5px; font-weight: 700; line-height: 1.6; margin-bottom: 18px; min-height: 54px; }
+  .option {
+    display: block; width: 100%; text-align: left; cursor: pointer; background: #faf9ff;
+    border: 1.5px solid #e9e5f8; border-radius: 16px; padding: 15px 14px 15px 16px; margin-bottom: 13px;
+    font-size: 14.5px; line-height: 1.55; color: var(--ink); font-family: inherit; transition: all .15s ease;
+  }
+  .option:hover { border-color: #c4b5fd; background: #f5f3ff; }
+  .option b { display: inline-block; width: 22px; height: 22px; line-height: 22px; text-align: center;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2)); color: #fff; border-radius: 7px;
+    font-size: 12px; margin-right: 10px; }
+
+  /* 结果 */
+  .result-hero { border-radius: 20px; padding: 30px 20px 24px; text-align: center; color: #fff;
+    background: linear-gradient(135deg, var(--c1, #6d28d9), var(--c2, #a78bfa));
+    box-shadow: 0 14px 32px rgba(31,41,55,.18); }
+  .result-emoji { font-size: 52px; margin-bottom: 6px; }
+  .result-type { font-size: 46px; font-weight: 900; letter-spacing: 4px; line-height: 1.1; }
+  .result-name { font-size: 17px; font-weight: 700; margin-top: 6px; opacity: .95; }
+  .result-desc { margin-top: 14px; font-size: 14px; line-height: 1.8; opacity: .96; text-align: left; }
+  #cardImg { width: 100%; border-radius: 16px; margin-top: 16px; display: none; box-shadow: 0 12px 30px rgba(31,41,55,.16); }
+  .card-tip { text-align: center; color: var(--ink-soft); font-size: 11.5px; margin-top: 8px; }
+  #btnDownload { display: none; }
+
+  /* 历史 */
+  .h-item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: #fff;
+    border: 1.5px solid #eee9fb; border-radius: 16px; padding: 13px 15px; margin-bottom: 11px;
+    cursor: pointer; font-family: inherit; transition: border-color .15s ease; }
+  .h-item:hover { border-color: #c4b5fd; }
+  .h-emoji { font-size: 26px; }
+  .h-type { font-weight: 800; font-size: 16px; }
+  .h-name { color: var(--ink-soft); font-size: 12px; margin-top: 2px; }
+  .h-date { margin-left: auto; color: var(--ink-soft); font-size: 11.5px; }
+  .empty { text-align: center; color: var(--ink-soft); padding: 40px 0; font-size: 13.5px; line-height: 2; }
+  .danger { color: #dc2626; background: #fef2f2; border: 1.5px solid #fecaca; margin-top: 14px; }
+
+  /* 弹窗（手机框内） */
+  .modal-mask { position: absolute; inset: 0; background: rgba(17,24,39,.45); z-index: 60;
+    display: none; align-items: center; justify-content: center; border-radius: 36px; }
+  .modal-mask.show { display: flex; }
+  .modal { width: 290px; background: #fff; border-radius: 18px; padding: 22px 18px 16px; text-align: center;
+    animation: pop .2s ease; }
+  @keyframes pop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal h4 { font-size: 16px; margin-bottom: 8px; }
+  .modal p { font-size: 13px; color: var(--ink-soft); line-height: 1.6; margin-bottom: 18px; }
+  .modal-btns { display: flex; gap: 10px; }
+  .modal-btns .btn { padding: 11px; font-size: 14px; margin-top: 0; }
+  .btn-cancel { background: #f3f4f6; color: var(--ink); }
+  .btn-ok { background: #dc2626; box-shadow: 0 8px 18px rgba(220,38,38,.3); }
+
+  /* ===== 标注层 ===== */
+  .anno-badge {
+    position: absolute; top: -9px; right: -9px; z-index: 30;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--anno); color: #fff; font-size: 12px; font-weight: 800;
+    display: none; align-items: center; justify-content: center;
+    box-shadow: 0 0 0 3px rgba(14,165,233,.25); pointer-events: none;
+  }
+  body.anno-on .anno-badge { display: flex; }
+  .anno-target { position: relative; }
+  body.anno-on .anno-target { outline: 2px dashed rgba(14,165,233,.55); outline-offset: 3px; border-radius: 12px; }
+
+  /* 说明面板 */
+  .panel { width: 330px; background: #fff; border-radius: 20px; box-shadow: 0 12px 32px rgba(31,41,55,.10);
+    padding: 20px 18px; position: sticky; top: 74px; max-height: 800px; overflow-y: auto; flex-shrink: 0; }
+  .panel h3 { font-size: 15px; margin-bottom: 4px; }
+  .panel .pg-tag { font-size: 12px; color: var(--anno); font-weight: 700; margin-bottom: 12px; }
+  .anno-item { display: flex; gap: 10px; padding: 10px 10px; border-radius: 12px; cursor: pointer; transition: background .15s ease; }
+  .anno-item:hover { background: #f0f9ff; }
+  .anno-item .n { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--anno);
+    color: #fff; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+  .anno-item .t { font-size: 13.5px; font-weight: 700; }
+  .anno-item .d { font-size: 12px; color: var(--ink-soft); line-height: 1.65; margin-top: 3px; }
+  .anno-item .ref { display: inline-block; font-size: 10.5px; color: var(--anno); background: #e0f2fe;
+    border-radius: 99px; padding: 1px 8px; margin-top: 5px; font-weight: 600; }
+  .flowmap { margin-top: 14px; border-top: 1.5px dashed #e5e7eb; padding-top: 14px; }
+  .flowmap h4 { font-size: 13px; margin-bottom: 8px; color: var(--ink-soft); }
+  .flowmap .f { font-size: 12px; line-height: 2; color: var(--ink-soft); }
+  .flowmap .f b { color: var(--brand-1); }
+  .flowmap .arrow { color: var(--brand-2); font-weight: 800; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="tb-title">MBTI 快测 · 交互原型<span class="tb-ver">PRD V1.0</span></div>
+  <div class="tb-actions">
+    <button class="tb-btn on" id="tgAnno">标注：开</button>
+    <button class="tb-btn" data-jump="home">首页</button>
+    <button class="tb-btn" data-jump="quiz">答题页</button>
+    <button class="tb-btn" data-jump="result">结果页</button>
+    <button class="tb-btn" data-jump="history">历史页</button>
+    <button class="tb-btn" id="btnReset">重置原型</button>
+  </div>
+  <div class="tb-note">依据 <b>《MBTI 性格测评程序 PRD V1.0》</b>制作 · 手机壳内可直接点击走通全流程 · 标注编号与右侧说明一一对应，角标引用 PRD 章节号</div>
+</div>
+
+<div class="stage">
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="screen" id="screen">
+      <div class="app-logo">MBTI 快测</div>
+
+      <!-- 首页 -->
+      <section class="pg active" id="pg-home">
+        <div class="card hero">
+          <div class="hero-emoji">🧭</div>
+          <h1>2 分钟，认识一下自己</h1>
+          <p>20 道轻松二选一<br>测出你的 MBTI 人格类型</p>
+          <div style="height: 22px"></div>
+          <button class="btn btn-primary anno-target" id="btnStart">开始测试<span class="anno-badge"></span></button>
+          <button class="btn btn-ghost btn-sub anno-target" id="btnGoHistory">查看历史结果<span class="anno-badge"></span></button>
+          <div class="tips">免费 · 无需登录 · 数据只保存在你的设备上<br>结果仅供娱乐与自我探索</div>
+        </div>
+      </section>
+
+      <!-- 答题 -->
+      <section class="pg" id="pg-quiz">
+        <div class="quiz-top anno-target" id="quizTop">
+          <span class="quiz-count" id="quizCount">第 1 / 20 题</span>
+          <button class="quiz-back" id="btnPrev">← 上一题</button>
+        </div>
+        <div class="progress anno-target" id="quizProg"><div class="progress-bar" id="progressBar"></div><span class="anno-badge"></span></div>
+        <div class="card">
+          <div class="question" id="questionText"></div>
+          <button class="option anno-target" id="optA"><b>A</b><span id="optAText"></span><span class="anno-badge"></span></button>
+          <button class="option anno-target" id="optB"><b>B</b><span id="optBText"></span><span class="anno-badge"></span></button>
+        </div>
+      </section>
+
+      <!-- 结果 -->
+      <section class="pg" id="pg-result">
+        <div class="result-hero anno-target" id="resultHero">
+          <div class="result-emoji" id="resultEmoji"></div>
+          <div class="result-type" id="resultType"></div>
+          <div class="result-name" id="resultName"></div>
+          <div class="result-desc" id="resultDesc"></div>
+          <span class="anno-badge"></span>
+        </div>
+        <div style="height: 18px"></div>
+        <button class="btn btn-primary anno-target" id="btnCard">生成分享卡片<span class="anno-badge"></span></button>
+        <img id="cardImg" alt="MBTI 结果卡片">
+        <div class="card-tip" id="cardTip" style="display:none">微信内长按图片可保存或转发 · 电脑端点下方按钮下载</div>
+        <button class="btn btn-ghost btn-sub" id="btnDownload">下载卡片图片</button>
+        <button class="btn btn-ghost btn-sub anno-target" id="btnRetake">重新测一次<span class="anno-badge"></span></button>
+        <button class="btn btn-ghost btn-sub anno-target" id="btnBackHome">返回首页<span class="anno-badge"></span></button>
+      </section>
+
+      <!-- 历史 -->
+      <section class="pg" id="pg-history">
+        <div class="card" style="padding: 20px 14px;">
+          <div id="historyList"></div>
+          <div id="historyEmpty" class="empty anno-target" style="display:none">还没有测试记录<br>快去测一次吧<span class="anno-badge"></span></div>
+          <button class="btn btn-ghost btn-sub" id="btnBackHome2">返回首页</button>
+          <button class="btn btn-sub danger anno-target" id="btnClear" style="display:none">清空全部记录<span class="anno-badge"></span></button>
+        </div>
+      </section>
+
+      <!-- 清空确认弹窗（手机框内） -->
+      <div class="modal-mask" id="modalMask">
+        <div class="modal anno-target" id="modalBox">
+          <h4>清空历史记录</h4>
+          <p>确定清空全部历史记录吗？<br>此操作不可恢复。</p>
+          <div class="modal-btns">
+            <button class="btn btn-cancel" id="mCancel">取消</button>
+            <button class="btn btn-ok" id="mOk">确定清空</button>
+          </div>
+          <span class="anno-badge"></span>
+        </div>
+      </div>
+    </div>
+    <div class="homebar"></div>
+  </div>
+
+  <!-- 标注说明面板 -->
+  <aside class="panel" id="annoPanel">
+    <h3>交互说明</h3>
+    <div class="pg-tag" id="annoPage">当前页面：首页</div>
+    <ol id="annoList" style="list-style:none"></ol>
+    <div class="flowmap">
+      <h4>页面流转总览</h4>
+      <div class="f">
+        <b>首页</b> <span class="arrow">→</span> 开始测试 <span class="arrow">→</span> <b>答题页</b> <span class="arrow">→</span> 第 20 题作答 <span class="arrow">→</span> <b>结果页</b> <span class="arrow">→</span> 生成卡片 → 分享转发<br>
+        结果页 <span class="arrow">→</span> 重新测一次 <span class="arrow">→</span> 答题页<br>
+        首页 <span class="arrow">→</span> 查看历史 <span class="arrow">→</span> <b>历史页</b> <span class="arrow">→</span> 点击条目 <span class="arrow">→</span> 结果页
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ===== 题库（与 PRD 5.7 / V1 实现一致） ===== */
+  var QUESTIONS = [
+    { q: '周末参加一场热闹的聚会，你的状态是？', a: [
+      { t: '越玩越精神，散场了还想再组个局', s: 'E' },
+      { t: '回家后只想安安静静躺平充电', s: 'I' } ] },
+    { q: '朋友分享旅行攻略，你更爱听哪部分？', a: [
+      { t: '具体安排：几点的车、住哪、花多少钱', s: 'S' },
+      { t: '当地的故事、传说和奇怪见闻', s: 'N' } ] },
+    { q: '朋友向你倾诉工作委屈，你的第一反应是？', a: [
+      { t: '帮 TA 梳理问题到底出在哪', s: 'T' },
+      { t: '先安慰情绪，陪着说「他们真过分」', s: 'F' } ] },
+    { q: '出门旅行，你更喜欢哪种方式？', a: [
+      { t: '行程提前排好，按计划稳稳地走', s: 'J' },
+      { t: '走到哪算哪，随性探索才好玩', s: 'P' } ] },
+    { q: '电梯里遇到半熟的同学，你会？', a: [
+      { t: '主动打个招呼，顺便聊两句', s: 'E' },
+      { t: '点头微笑就行，安静等到达', s: 'I' } ] },
+    { q: '看到一幅抽象画，你最先想到的是？', a: [
+      { t: '构图、颜色、笔触用得挺讲究', s: 'S' },
+      { t: '它让我联想到某种情绪或一个故事', s: 'N' } ] },
+    { q: '看一部煽情电影，你通常？', a: [
+      { t: '剧情再感人，我也能冷静看逻辑', s: 'T' },
+      { t: '很容易被情节戳中，眼眶发热', s: 'F' } ] },
+    { q: '你的书桌或房间更接近哪种状态？', a: [
+      { t: '东西归位，井井有条', s: 'J' },
+      { t: '看起来有点乱，但我清楚东西在哪', s: 'P' } ] },
+    { q: '遇到烦心事，你更想？', a: [
+      { t: '找朋友吐吐槽，说出来就舒服一半', s: 'E' },
+      { t: '自己消化，想通了再说', s: 'I' } ] },
+    { q: '上课或开会，你更容易记住？', a: [
+      { t: '具体的数字、例子和细节', s: 'S' },
+      { t: '整体的思路和大方向', s: 'N' } ] },
+    { q: '小组讨论出现分歧，你更看重？', a: [
+      { t: '谁有理听谁的，把事做好', s: 'T' },
+      { t: '和气最重要，别伤了感情', s: 'F' } ] },
+    { q: '截止日期面前，你通常是？', a: [
+      { t: '提前做完才安心', s: 'J' },
+      { t: '最后关头冲刺，灵感反而更多', s: 'P' } ] },
+    { q: '到了陌生环境（新班级 / 新公司），你？', a: [
+      { t: '很快认识一圈新朋友', s: 'E' },
+      { t: '先观察一段时间，熟了再开口', s: 'I' } ] },
+    { q: '拿到一个新工具或新设备，你倾向？', a: [
+      { t: '照着说明书一步步来', s: 'S' },
+      { t: '直接上手，自己摸索各种玩法', s: 'N' } ] },
+    { q: '做决定时，你更常？', a: [
+      { t: '列出利弊，理性权衡', s: 'T' },
+      { t: '跟着感觉走，喜欢就选', s: 'F' } ] },
+    { q: '点外卖或选餐厅时，你？', a: [
+      { t: '心里早有想法，很快下单', s: 'J' },
+      { t: '翻半天菜单，感觉都想试试', s: 'P' } ] },
+    { q: '难得的长假，你更想怎么过？', a: [
+      { t: '组局出去玩，人多才热闹', s: 'E' },
+      { t: '宅家看书打游戏，独处最舒服', s: 'I' } ] },
+    { q: '朋友对你的评价，更接近哪种？', a: [
+      { t: '脚踏实地，靠谱实在', s: 'S' },
+      { t: '脑洞大，点子多', s: 'N' } ] },
+    { q: '别人眼中你说话的风格更接近？', a: [
+      { t: '直接坦率，就事论事', s: 'T' },
+      { t: '温和委婉，照顾别人感受', s: 'F' } ] },
+    { q: '计划突然被打乱，你的反应？', a: [
+      { t: '有点烦躁，想赶紧回到原计划', s: 'J' },
+      { t: '无所谓，正好换条路试试', s: 'P' } ] }
+  ];
+
+  var TYPES = {
+    INTJ: { name: '建筑师', emoji: '🧠', c1: '#6d28d9', c2: '#a78bfa', desc: '脑子里的蓝图永远比现实清晰。目标感强、逻辑在线，不爱无效社交，但认定的事会一头扎到底。' },
+    INTP: { name: '逻辑学家', emoji: '🔍', c1: '#6d28d9', c2: '#a78bfa', desc: '行走的「为什么」。喜欢拆解万物原理，观点多到用不完，脑内辩论从没停过。' },
+    ENTJ: { name: '指挥官', emoji: '⚡', c1: '#6d28d9', c2: '#a78bfa', desc: '天生的操盘手。目标明确、执行力拉满，喜欢带节奏，最看不惯磨叽和低效。' },
+    ENTP: { name: '辩论家', emoji: '🎭', c1: '#6d28d9', c2: '#a78bfa', desc: '点子王加嘴强王者。越聊越兴奋，规则在你眼里只是「参考建议」。' },
+    INFJ: { name: '提倡者', emoji: '🌙', c1: '#059669', c2: '#6ee7b7', desc: '温柔外表下藏着一套完整的理想主义。看人很准、重感情，也需要悄悄独处回血。' },
+    INFP: { name: '调停者', emoji: '🦋', c1: '#059669', c2: '#6ee7b7', desc: '内心住着一个小宇宙。共情力拉满，容易被感动，也容易想太多内耗自己。' },
+    ENFJ: { name: '主人公', emoji: '🌟', c1: '#059669', c2: '#6ee7b7', desc: '人群中的暖场担当。天生会照顾人、带动气氛，别人的成长就是你的快乐源泉。' },
+    ENFP: { name: '快乐小狗', emoji: '🐶', c1: '#059669', c2: '#6ee7b7', desc: '快乐是本命，好奇是燃料。热情爱交朋友，想法天马行空，说走就走。' },
+    ISTJ: { name: '物流师', emoji: '📋', c1: '#2563eb', c2: '#93c5fd', desc: '人形计划表。靠谱、守时、说到做到，规则和秩序让你心安。' },
+    ISFJ: { name: '守卫者', emoji: '🛡️', c1: '#2563eb', c2: '#93c5fd', desc: '低调的暖心守护者。记得朋友所有的喜好，默默把事情安排妥当，从不邀功。' },
+    ESTJ: { name: '总经理', emoji: '📊', c1: '#2563eb', c2: '#93c5fd', desc: '行动派管理者。条理分明、雷厉风行，「这事交给我」就是你的口头禅。' },
+    ESFJ: { name: '执政官', emoji: '🤝', c1: '#2563eb', c2: '#93c5fd', desc: '氛围调和师。热情好客、照顾周全，是朋友圈里的粘合剂。' },
+    ISTP: { name: '鉴赏家', emoji: '🔧', c1: '#d97706', c2: '#fcd34d', desc: '冷静的手艺人。动手能力拉满，话不多，但一出手就知有没有。' },
+    ISFP: { name: '探险家', emoji: '🎨', c1: '#d97706', c2: '#fcd34d', desc: '生活艺术家。审美在线、活在当下，安静却有自己独特的品味。' },
+    ESTP: { name: '企业家', emoji: '🎲', c1: '#d97706', c2: '#fcd34d', desc: '肾上腺素型选手。敢闯敢试、随机应变，无聊才是你最大的天敌。' },
+    ESFP: { name: '表演者', emoji: '🎉', c1: '#d97706', c2: '#fcd34d', desc: '行走的气氛组。你在哪里，笑声就在哪里，享受当下每一刻。' }
+  };
+
+  /* ===== 标注数据（角标编号 ↔ PRD 章节） ===== */
+  var ANNO = {
+    home: [
+      { t: '开始测试', d: '进入答题页：题号重置为第 1 / 20 题，进度条归零。', ref: 'PRD 5.1' },
+      { t: '查看历史结果', d: '进入历史页；无记录时显示空态引导文案。', ref: 'PRD 5.1 / 5.5' }
+    ],
+    quiz: [
+      { t: '题号计数', d: '「第 X / 20 题」实时反映作答进度。', ref: 'PRD 5.2' },
+      { t: '← 上一题', d: '回退至前一题可改选；第 1 题时置灰不可点。', ref: 'PRD 5.2' },
+      { t: '进度条', d: '按当前题号实时填充（渐变紫粉）。', ref: 'PRD 5.2' },
+      { t: '选项 A / B', d: '点击即选中并自动跳下一题；A 侧固定映射 E / S / T / J（见 PRD 5.6 计分规则）。第 20 题作答后直接出结果。', ref: 'PRD 5.2 / 5.6' }
+    ],
+    result: [
+      { t: '结果卡（极简报告）', d: '类型 emoji + 大字母 + 类型名 + 一段描述；使用该类型专属渐变配色；不展示维度百分比图。', ref: 'PRD 5.3' },
+      { t: '生成分享卡片', d: '前端 Canvas 生成 720×960 分享图：站点名 + emoji + 类型 + 描述（标点断行）+ 日期 + 免责小字。生成后图片展示于此页。', ref: 'PRD 5.4' },
+      { t: '重新测一次', d: '重置全部答题状态，回到第 1 题。', ref: 'PRD 5.3' },
+      { t: '返回首页', d: '回到首页，历史记录保留。', ref: 'PRD 5.3' }
+    ],
+    history: [
+      { t: '历史条目', d: 'emoji + 类型 + 类型名 + 日期；点击回看该类型结果页（可再次生成卡片）。新记录置顶，上限 30 条。', ref: 'PRD 5.5' },
+      { t: '空态（无记录时）', d: '显示「还没有测试记录，快去测一次吧」引导文案。', ref: 'PRD 5.5' },
+      { t: '清空全部记录', d: '弹出二次确认弹窗（见弹窗层）；确认后清空并刷新列表。', ref: 'PRD 5.5' }
+    ],
+    modal: [
+      { t: '二次确认弹窗', d: '「确定清空 / 取消」双按钮；确定后清空历史并显示空态，取消则返回历史页。', ref: 'PRD 5.5' }
+    ]
+  };
+  var PAGE_NAME = { home: '首页', quiz: '答题页', result: '结果页', history: '历史页', modal: '清空确认弹窗' };
+
+  /* ===== 状态 ===== */
+  var cur = 0, answers = [], lastResult = null, curPage = 'home';
+  var badges = [];
+
+  function $(id) { return document.getElementById(id); }
+  function loadHistory() {
+    try { var r = localStorage.getItem('mbti_proto_history'); var a = r ? JSON.parse(r) : []; return Array.isArray(a) ? a : []; }
+    catch (e) { return []; }
+  }
+  function saveHistory(a) { try { localStorage.setItem('mbti_proto_history', JSON.stringify(a)); } catch (e) {} }
+  function todayStr() {
+    var d = new Date(); function p(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+
+  /* ===== 页面切换 ===== */
+  function showPage(name) {
+    curPage = name;
+    ['home', 'quiz', 'result', 'history'].forEach(function (p) {
+      $('pg-' + p).classList.toggle('active', p === name);
+    });
+    $('screen').scrollTop = 0;
+    renderAnno(name);
+  }
+
+  /* ===== 标注渲染 ===== */
+  function clearBadges() { badges.forEach(function (b) { b.remove(); }); badges = []; }
+  function bindBadge(target, text, pos) {
+    var badge = target.querySelector('.anno-badge');
+    if (!badge) { badge = document.createElement('span'); badge.className = 'anno-badge'; target.appendChild(badge); }
+    badge.textContent = text;
+    if (pos === 'left') { badge.style.right = 'auto'; badge.style.left = '-9px'; }
+    badges.push(badge);
+  }
+  function renderAnno(page) {
+    var list = $('annoList');
+    list.innerHTML = '';
+    $('annoPage').textContent = '当前页面：' + (PAGE_NAME[page] || page);
+    var data = ANNO[page] || [];
+    data.forEach(function (item, i) {
+      var li = document.createElement('li');
+      li.className = 'anno-item';
+      li.innerHTML = '<span class="n">' + (i + 1) + '</span><span><span class="t"></span>' +
+        '<div class="d"></div><span class="ref"></span></span>';
+      li.querySelector('.t').textContent = item.t;
+      li.querySelector('.d').textContent = item.d;
+      li.querySelector('.ref').textContent = item.ref;
+      list.appendChild(li);
+    });
+    clearBadges();
+    // 按页面挂角标：与 ANNO 数据顺序对应（可显式指定编号，如 A/B 选项共用同一编号）
+    var map = {
+      home: [$('btnStart'), $('btnGoHistory')],
+      quiz: [$('quizCount'), $('btnPrev'), { el: $('quizProg'), pos: 'left' }, $('optA'), { el: $('optB'), n: 4 }],
+      result: [$('resultHero'), $('btnCard'), $('btnRetake'), $('btnBackHome')],
+      history: [$('historyList'), $('historyEmpty'), $('btnClear')],
+      modal: [$('modalBox')]
+    };
+    (map[page] || []).forEach(function (item, i) {
+      if (!item) return;
+      var el = item.el || item;
+      var n = item.n || (i + 1);
+      var pos = item.pos;
+      bindBadge(el, n, pos);
+    });
+  }
+
+  /* ===== 答题 ===== */
+  function startQuiz() { cur = 0; answers = new Array(QUESTIONS.length); renderQuestion(); showPage('quiz'); }
+  function renderQuestion() {
+    var item = QUESTIONS[cur];
+    $('quizCount').textContent = '第 ' + (cur + 1) + ' / ' + QUESTIONS.length + ' 题';
+    $('progressBar').style.width = (cur / QUESTIONS.length * 100) + '%';
+    $('questionText').textContent = item.q;
+    $('optAText').textContent = item.a[0].t;
+    $('optBText').textContent = item.a[1].t;
+    $('btnPrev').disabled = (cur === 0);
+    renderAnno('quiz');
+  }
+  function choose(idx) {
+    answers[cur] = QUESTIONS[cur].a[idx].s;
+    if (cur < QUESTIONS.length - 1) { cur++; renderQuestion(); }
+    else { finishQuiz(); }
+  }
+  function calcType(arr) {
+    var s = { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 };
+    for (var i = 0; i < QUESTIONS.length; i++) if (arr[i]) s[arr[i]]++;
+    return (s.E >= s.I ? 'E' : 'I') + (s.S >= s.N ? 'S' : 'N') + (s.T >= s.F ? 'T' : 'F') + (s.J >= s.P ? 'J' : 'P');
+  }
+  function finishQuiz() {
+    var type = calcType(answers);
+    lastResult = type;
+    var arr = loadHistory();
+    arr.unshift({ t: type, d: todayStr(), ts: Date.now() });
+    if (arr.length > 30) arr = arr.slice(0, 30);
+    saveHistory(arr);
+    showResult(type);
+  }
+
+  /* ===== 结果 ===== */
+  function showResult(type) {
+    lastResult = type;
+    var info = TYPES[type];
+    var hero = $('resultHero');
+    hero.style.setProperty('--c1', info.c1);
+    hero.style.setProperty('--c2', info.c2);
+    $('resultEmoji').textContent = info.emoji;
+    $('resultType').textContent = type;
+    $('resultName').textContent = info.name;
+    var descEl = $('resultDesc');
+    var segs = info.desc.match(/[^，。！？、；：「」]+[，。！？、；：「」]?/g) || [info.desc];
+    descEl.textContent = '';
+    segs.forEach(function (sg) {
+      var sp = document.createElement('span');
+      sp.style.display = 'inline-block'; sp.textContent = sg;
+      descEl.appendChild(sp);
+    });
+    $('cardImg').style.display = 'none';
+    $('cardImg').removeAttribute('src');
+    $('btnDownload').style.display = 'none';
+    $('cardTip').style.display = 'none';
+    showPage('result');
+  }
+
+  /* ===== 卡片 ===== */
+  function wrapText(ctx, text, maxWidth, maxLines) {
+    var segs = text.match(/[^，。！？、；：「」]+[，。！？、；：「」]?/g) || [text];
+    var lines = [], line = '';
+    segs.forEach(function (seg) {
+      if (ctx.measureText(line + seg).width <= maxWidth) { line += seg; return; }
+      if (line) { lines.push(line); line = ''; }
+      if (ctx.measureText(seg).width > maxWidth) {
+        for (var i = 0; i < seg.length; i++) {
+          if (line && ctx.measureText(line + seg[i]).width > maxWidth) { lines.push(line); line = seg[i]; }
+          else { line += seg[i]; }
+        }
+      } else { line = seg; }
+    });
+    if (line) lines.push(line);
+    return lines.slice(0, maxLines);
+  }
+  function generateCard() {
+    var info = TYPES[lastResult];
+    var W = 720, H = 960;
+    var canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    var ctx = canvas.getContext('2d');
+    var g = ctx.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, info.c1); g.addColorStop(1, info.c2);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.beginPath(); ctx.arc(W - 60, 120, 140, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(40, H - 100, 110, 0, Math.PI * 2); ctx.fill();
+    var FONT = '-apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif';
+    var EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.font = '600 28px ' + FONT; ctx.fillText('MBTI 快测', W / 2, 84);
+    ctx.font = '110px ' + EMOJI_FONT; ctx.fillText(info.emoji, W / 2, 248);
+    ctx.fillStyle = '#fff'; ctx.font = '900 150px ' + FONT; ctx.fillText(lastResult, W / 2, 415);
+    ctx.font = '700 46px ' + FONT; ctx.fillText(info.name, W / 2, 490);
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(W / 2 - 40, 535); ctx.lineTo(W / 2 + 40, 535); ctx.stroke();
+    ctx.font = '400 31px ' + FONT; ctx.fillStyle = 'rgba(255,255,255,0.96)';
+    var lines = wrapText(ctx, info.desc, 560, 5);
+    for (var i = 0; i < lines.length; i++) ctx.fillText(lines[i], W / 2, 610 + i * 52);
+    ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.font = '400 26px ' + FONT;
+    ctx.fillText(todayStr() + ' · 测于 MBTI 快测', W / 2, H - 92);
+    ctx.font = '400 22px ' + FONT; ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillText('仅供娱乐 · 2 分钟认识自己', W / 2, H - 52);
+    var dataUrl = canvas.toDataURL('image/png');
+    var img = $('cardImg');
+    img.src = dataUrl; img.style.display = 'block';
+    $('cardTip').style.display = 'block';
+    var dl = $('btnDownload');
+    dl.onclick = function () {
+      var a = document.createElement('a');
+      a.href = dataUrl; a.download = 'MBTI快测_' + lastResult + '.png';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    };
+    dl.style.display = 'block';
+  }
+
+  /* ===== 历史 ===== */
+  function renderHistory() {
+    var arr = loadHistory();
+    var list = $('historyList');
+    list.innerHTML = '';
+    var has = arr.length > 0;
+    $('historyEmpty').style.display = has ? 'none' : 'block';
+    $('btnClear').style.display = has ? 'block' : 'none';
+    arr.forEach(function (item) {
+      var info = TYPES[item.t];
+      if (!info) return;
+      var btn = document.createElement('button');
+      btn.className = 'h-item anno-target';
+      btn.innerHTML = '<span class="h-emoji"></span><span><span class="h-type"></span>' +
+        '<div class="h-name"></div></span><span class="h-date"></span>';
+      btn.querySelector('.h-emoji').textContent = info.emoji;
+      btn.querySelector('.h-type').textContent = item.t;
+      btn.querySelector('.h-name').textContent = info.name;
+      btn.querySelector('.h-date').textContent = item.d;
+      btn.addEventListener('click', function () { showResult(item.t); });
+      list.appendChild(btn);
+    });
+    renderAnno('history');
+  }
+
+  /* ===== 弹窗 ===== */
+  function openModal() { $('modalMask').classList.add('show'); renderAnno('modal'); }
+  function closeModal() { $('modalMask').classList.remove('show'); renderAnno('history'); }
+
+  /* ===== 事件 ===== */
+  $('btnStart').addEventListener('click', startQuiz);
+  $('btnGoHistory').addEventListener('click', function () { renderHistory(); showPage('history'); });
+  $('optA').addEventListener('click', function () { choose(0); });
+  $('optB').addEventListener('click', function () { choose(1); });
+  $('btnPrev').addEventListener('click', function () { if (cur > 0) { cur--; renderQuestion(); } });
+  $('btnCard').addEventListener('click', generateCard);
+  $('btnRetake').addEventListener('click', startQuiz);
+  $('btnBackHome').addEventListener('click', function () { showPage('home'); });
+  $('btnBackHome2').addEventListener('click', function () { showPage('home'); });
+  $('btnClear').addEventListener('click', openModal);
+  $('mCancel').addEventListener('click', closeModal);
+  $('mOk').addEventListener('click', function () { saveHistory([]); closeModal(); renderHistory(); });
+  $('tgAnno').addEventListener('click', function () {
+    var on = document.body.classList.toggle('anno-on');
+    this.textContent = on ? '标注：开' : '标注：关';
+    this.classList.toggle('on', on);
+  });
+  $('btnReset').addEventListener('click', function () {
+    try { localStorage.removeItem('mbti_proto_history'); } catch (e) {}
+    lastResult = null;
+    showPage('home');
+  });
+  document.querySelectorAll('.tb-btn[data-jump]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var p = this.getAttribute('data-jump');
+      if (p === 'quiz') { startQuiz(); return; }
+      if (p === 'result') { showResult(lastResult || 'INFP'); return; }
+      if (p === 'history') { renderHistory(); showPage('history'); return; }
+      showPage(p);
+    });
+  });
+
+  // 初始
+  document.body.classList.add('anno-on');
+  renderAnno('home');
+})();
+</script>
+</body>
+</html>
