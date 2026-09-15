@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
+<title>MBTI 快测 · 2 分钟认识自己</title>
+<style>
+  :root {
+    --brand-1: #7c3aed;
+    --brand-2: #ec4899;
+    --ink: #1f2937;
+    --ink-soft: #6b7280;
+    --card: #ffffff;
+    --bg: #f4f2fb;
+    --radius: 20px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: linear-gradient(160deg, #ede9fe 0%, #fdf2f8 55%, #eff6ff 100%);
+    color: var(--ink);
+    min-height: 100%;
+  }
+  .app { max-width: 480px; margin: 0 auto; padding: 20px 18px 40px; }
+  .logo {
+    text-align: center; font-weight: 800; font-size: 18px; letter-spacing: 2px;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    padding: 6px 0 18px;
+  }
+  .page { display: none; animation: fadein .35s ease; }
+  .page.active { display: block; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+  .card {
+    background: var(--card); border-radius: var(--radius);
+    box-shadow: 0 12px 32px rgba(124, 58, 237, .10);
+    padding: 28px 22px;
+  }
+
+  /* ---------- 首页 ---------- */
+  .hero { text-align: center; padding: 40px 22px 30px; }
+  .hero-emoji {
+    width: 92px; height: 92px; margin: 0 auto 18px; border-radius: 28px;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 48px; box-shadow: 0 14px 30px rgba(124, 58, 237, .30);
+  }
+  .hero h1 { font-size: 26px; font-weight: 800; margin-bottom: 10px; }
+  .hero p { color: var(--ink-soft); font-size: 15px; line-height: 1.7; }
+  .btn {
+    display: block; width: 100%; border: none; cursor: pointer;
+    border-radius: 16px; padding: 16px; font-size: 17px; font-weight: 700;
+    font-family: inherit; transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary {
+    color: #fff; background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    box-shadow: 0 10px 24px rgba(124, 58, 237, .35);
+  }
+  .btn-ghost {
+    color: var(--brand-1); background: #fff; border: 1.5px solid #ddd6fe; margin-top: 12px;
+  }
+  .btn-sub { padding: 13px; font-size: 15px; }
+  .tips { margin-top: 18px; color: var(--ink-soft); font-size: 12.5px; text-align: center; line-height: 1.9; }
+
+  /* ---------- 答题 ---------- */
+  .quiz-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .quiz-count { font-size: 13.5px; color: var(--ink-soft); font-weight: 600; }
+  .nav-row { display: flex; gap: 12px; margin-top: 18px; }
+  .nav-btn {
+    flex: 1; padding: 13px; border-radius: 14px; font-size: 15px; font-weight: 700;
+    font-family: inherit; cursor: pointer; border: 1.5px solid #ddd6fe;
+    background: #fff; color: var(--brand-1); transition: all .15s ease;
+  }
+  .nav-btn:disabled { opacity: .4; cursor: default; }
+  .nav-btn:not(:disabled):active { transform: scale(.97); }
+  .nav-next { background: linear-gradient(135deg, var(--brand-1), var(--brand-2)); color: #fff; border-color: transparent; box-shadow: 0 8px 20px rgba(124, 58, 237, .30); }
+  .option {
+    display: block; width: 100%; text-align: left; cursor: pointer;
+    background: #faf9ff; border: 1.5px solid #e9e5f8; border-radius: 16px;
+    padding: 17px 16px 17px 18px; margin-bottom: 14px;
+    font-size: 15.5px; line-height: 1.55; color: var(--ink); font-family: inherit;
+    transition: all .15s ease;
+  }
+  .option:hover { border-color: #c4b5fd; background: #f5f3ff; }
+  .option:active { transform: scale(.98); border-color: var(--brand-1); background: #f3e8ff; }
+  .option b { display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2)); color: #fff;
+    border-radius: 8px; font-size: 13px; margin-right: 10px; }
+  .progress { height: 8px; background: #ede9fe; border-radius: 99px; overflow: hidden; margin-bottom: 26px; }
+  .progress-bar {
+    height: 100%; width: 0; border-radius: 99px;
+    background: linear-gradient(90deg, var(--brand-1), var(--brand-2));
+    transition: width .3s ease;
+  }
+  .question { font-size: 19px; font-weight: 700; line-height: 1.6; margin-bottom: 22px; min-height: 60px; }
+
+  /* ---------- 结果 ---------- */
+  .result-hero {
+    border-radius: var(--radius); padding: 34px 22px 28px; text-align: center; color: #fff;
+    background: linear-gradient(135deg, var(--c1, #7c3aed), var(--c2, #ec4899));
+    box-shadow: 0 14px 32px rgba(31, 41, 55, .18);
+  }
+  .result-emoji { font-size: 58px; margin-bottom: 8px; }
+  .result-type { font-size: 52px; font-weight: 900; letter-spacing: 4px; line-height: 1.1; }
+  .result-name { font-size: 19px; font-weight: 700; margin-top: 8px; opacity: .95; }
+  .result-desc { margin-top: 18px; font-size: 15px; line-height: 1.8; opacity: .96; text-align: left; }
+  .letters-card { margin-top: 18px; }
+  .letters-title { font-size: 15px; font-weight: 800; margin-bottom: 4px; }
+  .letters-sub { font-size: 12px; color: var(--ink-soft); margin-bottom: 6px; }
+  .letter-row { display: flex; gap: 12px; align-items: flex-start; padding: 11px 0; border-bottom: 1px dashed #f0ebfa; }
+  .letter-row:last-child { border-bottom: none; }
+  .letter-chip {
+    width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2)); color: #fff;
+    font-weight: 800; font-size: 17px; display: flex; align-items: center; justify-content: center;
+  }
+  .letter-body { flex: 1; }
+  .letter-head { display: flex; align-items: baseline; gap: 8px; }
+  .letter-head b { font-size: 14.5px; }
+  .letter-head i { font-size: 11px; color: var(--ink-soft); font-style: normal; }
+  .letter-desc { display: block; font-size: 12.5px; color: var(--ink-soft); line-height: 1.6; margin-top: 2px; }
+  .disclaimer {
+    margin-top: 16px; padding: 12px 14px; background: #f9fafb; border: 1px solid #f3f4f6;
+    border-radius: 12px; font-size: 12px; color: var(--ink-soft); text-align: center; line-height: 1.7;
+  }
+  .result-actions { margin-top: 20px; }
+  .card-tip { text-align: center; color: var(--ink-soft); font-size: 12.5px; margin-top: 10px; }
+  #cardImg { width: 100%; border-radius: 16px; margin-top: 18px; display: none;
+    box-shadow: 0 12px 30px rgba(31, 41, 55, .16); }
+
+  /* ---------- 历史 ---------- */
+  .h-item {
+    display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+    background: #fff; border: 1.5px solid #eee9fb; border-radius: 16px;
+    padding: 14px 16px; margin-bottom: 12px; cursor: pointer; font-family: inherit;
+    transition: border-color .15s ease;
+  }
+  .h-item:hover { border-color: #c4b5fd; }
+  .h-emoji { font-size: 28px; }
+  .h-type { font-weight: 800; font-size: 17px; }
+  .h-name { color: var(--ink-soft); font-size: 13px; margin-top: 2px; }
+  .h-date { margin-left: auto; color: var(--ink-soft); font-size: 12.5px; }
+  .empty { text-align: center; color: var(--ink-soft); padding: 46px 0; font-size: 14.5px; line-height: 2; }
+  .danger {
+    color: #dc2626; background: #fef2f2; border: 1.5px solid #fecaca; margin-top: 14px;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="logo">MBTI 快测</div>
+
+  <!-- 首页 -->
+  <section id="page-home" class="page active">
+    <div class="card hero">
+      <div class="hero-emoji">🧭</div>
+      <h1>2 分钟，认识一下自己</h1>
+      <p>20 道轻松二选一<br>测出你的 MBTI 人格类型</p>
+      <div style="height: 26px"></div>
+      <button class="btn btn-primary" id="btnStart">开始测试</button>
+      <button class="btn btn-ghost btn-sub" id="btnGoHistory">查看历史结果</button>
+      <div class="tips">免费 · 无需登录 · 数据只保存在你的设备上<br>本测评仅供娱乐和自我了解，不构成心理诊断或专业建议</div>
+    </div>
+  </section>
+
+  <!-- 答题 -->
+  <section id="page-quiz" class="page">
+    <div class="quiz-top">
+      <span class="quiz-count" id="quizCount">第 1 / 20 题</span>
+    </div>
+    <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="card">
+      <div class="question" id="questionText"></div>
+      <button class="option" id="optA"></button>
+      <button class="option" id="optB"></button>
+      <div class="nav-row">
+        <button class="nav-btn" id="btnPrev">← 上一题</button>
+        <button class="nav-btn nav-next" id="btnNext" disabled>下一题 →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 结果 -->
+  <section id="page-result" class="page">
+    <div class="result-hero" id="resultHero">
+      <div class="result-emoji" id="resultEmoji"></div>
+      <div class="result-type" id="resultType"></div>
+      <div class="result-name" id="resultName"></div>
+      <div class="result-desc" id="resultDesc"></div>
+    </div>
+    <div class="result-actions">
+      <button class="btn btn-primary" id="btnCard">生成分享卡片</button>
+      <button class="btn btn-ghost btn-sub" id="btnRetake">重新测一次</button>
+      <button class="btn btn-ghost btn-sub" id="btnBackHome">返回首页</button>
+    </div>
+    <div class="card letters-card">
+      <div class="letters-title">你的四个字母</div>
+      <div class="letters-sub">四个维度分别代表：能量方向 · 信息获取 · 决策方式 · 生活方式</div>
+      <div id="lettersList"></div>
+    </div>
+    <div class="disclaimer">本测评仅供娱乐和自我了解，不构成心理诊断或专业建议</div>
+    <img id="cardImg" alt="MBTI 结果卡片">
+    <div class="card-tip" id="cardTip" style="display:none">微信内长按图片可保存或转发 · 电脑端点下方按钮下载</div>
+    <button class="btn btn-ghost btn-sub" id="btnDownload" style="display:none">下载卡片图片</button>
+  </section>
+
+  <!-- 历史 -->
+  <section id="page-history" class="page">
+    <div class="card" style="padding: 22px 16px;">
+      <div id="historyList"></div>
+      <div id="historyEmpty" class="empty" style="display:none">还没有测试记录<br>快去测一次吧</div>
+      <button class="btn btn-ghost btn-sub" id="btnBackHome2">返回首页</button>
+      <button class="btn btn-sub danger" id="btnClear" style="display:none">清空全部记录</button>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ================= 题库（自研，规避官方版权） =================
+     每题两个选项；d=维度(EI/SN/TF/JP)，s=该选项计分的一侧 */
+  var QUESTIONS = [
+    { q: '周末参加一场热闹的聚会，你的状态是？', a: [
+      { t: '越玩越精神，散场了还想再组个局', d: 'EI', s: 'E' },
+      { t: '回家后只想安安静静躺平充电', d: 'EI', s: 'I' } ] },
+    { q: '朋友分享旅行攻略，你更爱听哪部分？', a: [
+      { t: '具体安排：几点的车、住哪、花多少钱', d: 'SN', s: 'S' },
+      { t: '当地的故事、传说和奇怪见闻', d: 'SN', s: 'N' } ] },
+    { q: '朋友向你倾诉工作委屈，你的第一反应是？', a: [
+      { t: '帮 TA 梳理问题到底出在哪', d: 'TF', s: 'T' },
+      { t: '先安慰情绪，陪着说「他们真过分」', d: 'TF', s: 'F' } ] },
+    { q: '出门旅行，你更喜欢哪种方式？', a: [
+      { t: '行程提前排好，按计划稳稳地走', d: 'JP', s: 'J' },
+      { t: '走到哪算哪，随性探索才好玩', d: 'JP', s: 'P' } ] },
+    { q: '电梯里遇到半熟的同学，你会？', a: [
+      { t: '主动打个招呼，顺便聊两句', d: 'EI', s: 'E' },
+      { t: '点头微笑就行，安静等到达', d: 'EI', s: 'I' } ] },
+    { q: '看到一幅抽象画，你最先想到的是？', a: [
+      { t: '构图、颜色、笔触用得挺讲究', d: 'SN', s: 'S' },
+      { t: '它让我联想到某种情绪或一个故事', d: 'SN', s: 'N' } ] },
+    { q: '看一部煽情电影，你通常？', a: [
+      { t: '剧情再感人，我也能冷静看逻辑', d: 'TF', s: 'T' },
+      { t: '很容易被情节戳中，眼眶发热', d: 'TF', s: 'F' } ] },
+    { q: '你的书桌或房间更接近哪种状态？', a: [
+      { t: '东西归位，井井有条', d: 'JP', s: 'J' },
+      { t: '看起来有点乱，但我清楚东西在哪', d: 'JP', s: 'P' } ] },
+    { q: '遇到烦心事，你更想？', a: [
+      { t: '找朋友吐吐槽，说出来就舒服一半', d: 'EI', s: 'E' },
+      { t: '自己消化，想通了再说', d: 'EI', s: 'I' } ] },
+    { q: '上课或开会，你更容易记住？', a: [
+      { t: '具体的数字、例子和细节', d: 'SN', s: 'S' },
+      { t: '整体的思路和大方向', d: 'SN', s: 'N' } ] },
+    { q: '小组讨论出现分歧，你更看重？', a: [
+      { t: '谁有理听谁的，把事做好', d: 'TF', s: 'T' },
+      { t: '和气最重要，别伤了感情', d: 'TF', s: 'F' } ] },
+    { q: '截止日期面前，你通常是？', a: [
+      { t: '提前做完才安心', d: 'JP', s: 'J' },
+      { t: '最后关头冲刺，灵感反而更多', d: 'JP', s: 'P' } ] },
+    { q: '到了陌生环境（新班级 / 新公司），你？', a: [
+      { t: '很快认识一圈新朋友', d: 'EI', s: 'E' },
+      { t: '先观察一段时间，熟了再开口', d: 'EI', s: 'I' } ] },
+    { q: '拿到一个新工具或新设备，你倾向？', a: [
+      { t: '照着说明书一步步来', d: 'SN', s: 'S' },
+      { t: '直接上手，自己摸索各种玩法', d: 'SN', s: 'N' } ] },
+    { q: '做决定时，你更常？', a: [
+      { t: '列出利弊，理性权衡', d: 'TF', s: 'T' },
+      { t: '跟着感觉走，喜欢就选', d: 'TF', s: 'F' } ] },
+    { q: '点外卖或选餐厅时，你？', a: [
+      { t: '心里早有想法，很快下单', d: 'JP', s: 'J' },
+      { t: '翻半天菜单，感觉都想试试', d: 'JP', s: 'P' } ] },
+    { q: '难得的长假，你更想怎么过？', a: [
+      { t: '组局出去玩，人多才热闹', d: 'EI', s: 'E' },
+      { t: '宅家看书打游戏，独处最舒服', d: 'EI', s: 'I' } ] },
+    { q: '朋友对你的评价，更接近哪种？', a: [
+      { t: '脚踏实地，靠谱实在', d: 'SN', s: 'S' },
+      { t: '脑洞大，点子多', d: 'SN', s: 'N' } ] },
+    { q: '别人眼中你说话的风格更接近？', a: [
+      { t: '直接坦率，就事论事', d: 'TF', s: 'T' },
+      { t: '温和委婉，照顾别人感受', d: 'TF', s: 'F' } ] },
+    { q: '计划突然被打乱，你的反应？', a: [
+      { t: '有点烦躁，想赶紧回到原计划', d: 'JP', s: 'J' },
+      { t: '无所谓，正好换条路试试', d: 'JP', s: 'P' } ] }
+  ];
+
+  /* ================= 16 型文案（AI 起草 · 轻松口语） =================
+     c1/c2 为该型的专属卡片渐变色 */
+  var TYPES = {
+    INTJ: { name: '建筑师', emoji: '🧠', c1: '#6d28d9', c2: '#a78bfa',
+      desc: '脑子里的蓝图永远比现实清晰。目标感强、逻辑在线，不爱无效社交，但认定的事会一头扎到底。' },
+    INTP: { name: '逻辑学家', emoji: '🔍', c1: '#6d28d9', c2: '#a78bfa',
+      desc: '行走的「为什么」。喜欢拆解万物原理，观点多到用不完，脑内辩论从没停过。' },
+    ENTJ: { name: '指挥官', emoji: '⚡', c1: '#6d28d9', c2: '#a78bfa',
+      desc: '天生的操盘手。目标明确、执行力拉满，喜欢带节奏，最看不惯磨叽和低效。' },
+    ENTP: { name: '辩论家', emoji: '🎭', c1: '#6d28d9', c2: '#a78bfa',
+      desc: '点子王加嘴强王者。越聊越兴奋，规则在你眼里只是「参考建议」。' },
+    INFJ: { name: '提倡者', emoji: '🌙', c1: '#059669', c2: '#6ee7b7',
+      desc: '温柔外表下藏着一套完整的理想主义。看人很准、重感情，也需要悄悄独处回血。' },
+    INFP: { name: '调停者', emoji: '🦋', c1: '#059669', c2: '#6ee7b7',
+      desc: '内心住着一个小宇宙。共情力拉满，容易被感动，也容易想太多内耗自己。' },
+    ENFJ: { name: '主人公', emoji: '🌟', c1: '#059669', c2: '#6ee7b7',
+      desc: '人群中的暖场担当。天生会照顾人、带动气氛，别人的成长就是你的快乐源泉。' },
+    ENFP: { name: '快乐小狗', emoji: '🐶', c1: '#059669', c2: '#6ee7b7',
+      desc: '快乐是本命，好奇是燃料。热情爱交朋友，想法天马行空，说走就走。' },
+    ISTJ: { name: '物流师', emoji: '📋', c1: '#2563eb', c2: '#93c5fd',
+      desc: '人形计划表。靠谱、守时、说到做到，规则和秩序让你心安。' },
+    ISFJ: { name: '守卫者', emoji: '🛡️', c1: '#2563eb', c2: '#93c5fd',
+      desc: '低调的暖心守护者。记得朋友所有的喜好，默默把事情安排妥当，从不邀功。' },
+    ESTJ: { name: '总经理', emoji: '📊', c1: '#2563eb', c2: '#93c5fd',
+      desc: '行动派管理者。条理分明、雷厉风行，「这事交给我」就是你的口头禅。' },
+    ESFJ: { name: '执政官', emoji: '🤝', c1: '#2563eb', c2: '#93c5fd',
+      desc: '氛围调和师。热情好客、照顾周全，是朋友圈里的粘合剂。' },
+    ISTP: { name: '鉴赏家', emoji: '🔧', c1: '#d97706', c2: '#fcd34d',
+      desc: '冷静的手艺人。动手能力拉满，话不多，但一出手就知有没有。' },
+    ISFP: { name: '探险家', emoji: '🎨', c1: '#d97706', c2: '#fcd34d',
+      desc: '生活艺术家。审美在线、活在当下，安静却有自己独特的品味。' },
+    ESTP: { name: '企业家', emoji: '🎲', c1: '#d97706', c2: '#fcd34d',
+      desc: '肾上腺素型选手。敢闯敢试、随机应变，无聊才是你最大的天敌。' },
+    ESFP: { name: '表演者', emoji: '🎉', c1: '#d97706', c2: '#fcd34d',
+      desc: '行走的气氛组。你在哪里，笑声就在哪里，享受当下每一刻。' }
+  };
+
+  /* ================= 状态与工具 ================= */
+  var pageEls = {
+    home: document.getElementById('page-home'),
+    quiz: document.getElementById('page-quiz'),
+    result: document.getElementById('page-result'),
+    history: document.getElementById('page-history')
+  };
+  var cur = 0;                 // 当前题号
+  var answers = [];            // 每题选择的侧（'E'/'I'/...）
+  var lastResult = null;       // 最近一次结果类型
+  var sessionSubmitted = false;// 本次答题会话是否已提交过结果
+  var lastSubmittedTs = 0;     // 本次会话提交记录的时间戳（用于替换而非新增）
+
+  /* 四个字母的含义（PRD：结果页展示每个字母代表什么） */
+  var LETTER_MEANINGS = {
+    E: { cn: '外向', en: 'Extraversion', d: '从人际互动和外部世界获得能量' },
+    I: { cn: '内向', en: 'Introversion', d: '从独处和内心世界获得能量' },
+    S: { cn: '实感', en: 'Sensing', d: '关注具体事实与细节，脚踏实地' },
+    N: { cn: '直觉', en: 'iNtuition', d: '关注联想与可能性，重视整体与灵感' },
+    T: { cn: '思考', en: 'Thinking', d: '决策时注重逻辑与客观分析' },
+    F: { cn: '情感', en: 'Feeling', d: '决策时注重感受与人际和谐' },
+    J: { cn: '判断', en: 'Judging', d: '喜欢计划明确、有条理的生活方式' },
+    P: { cn: '知觉', en: 'Perceiving', d: '喜欢灵活开放、随性自然的生活方式' }
+  };
+
+  function showPage(name) {
+    Object.keys(pageEls).forEach(function (k) {
+      pageEls[k].classList.toggle('active', k === name);
+    });
+    window.scrollTo(0, 0);
+  }
+
+  function loadHistory() {
+    try {
+      var raw = localStorage.getItem('mbtikuai_history');
+      var arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) { return []; }
+  }
+  function saveHistory(arr) {
+    localStorage.setItem('mbtikuai_history', JSON.stringify(arr));
+  }
+  function todayStr() {
+    var d = new Date();
+    function p(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+
+  /* ================= 答题流程 ================= */
+  function startQuiz() {
+    cur = 0;
+    answers = new Array(QUESTIONS.length);
+    sessionSubmitted = false;
+    renderQuestion();
+    showPage('quiz');
+  }
+
+  function renderQuestion() {
+    var item = QUESTIONS[cur];
+    var isLast = (cur === QUESTIONS.length - 1);
+    document.getElementById('quizCount').textContent =
+      '第 ' + (cur + 1) + ' / ' + QUESTIONS.length + ' 题';
+    document.getElementById('progressBar').style.width =
+      ((cur) / QUESTIONS.length * 100) + '%';
+    document.getElementById('questionText').textContent = item.q;
+    document.getElementById('optA').innerHTML = '<b>A</b>' + item.a[0].t;
+    document.getElementById('optB').innerHTML = '<b>B</b>' + item.a[1].t;
+    document.getElementById('btnPrev').disabled = (cur === 0);
+    var nextBtn = document.getElementById('btnNext');
+    nextBtn.textContent = isLast ? '查看结果' : '下一题 →';
+    nextBtn.disabled = !answers[cur];
+  }
+
+  function choose(idx) {
+    answers[cur] = QUESTIONS[cur].a[idx].s;
+    if (cur < QUESTIONS.length - 1) {
+      cur++;
+      renderQuestion();
+    } else {
+      // 最后一题：选中后仅更新按钮态，由「查看结果」提交，避免重复写入历史
+      document.getElementById('btnNext').disabled = false;
+    }
+  }
+
+  function prevQuestion() {
+    if (cur > 0) { cur--; renderQuestion(); }
+  }
+
+  function nextQuestion() {
+    if (!answers[cur]) return;
+    if (cur < QUESTIONS.length - 1) {
+      cur++;
+      renderQuestion();
+    } else {
+      finishQuiz();
+    }
+  }
+
+  /* ================= 计分判定 ================= */
+  function calcType(arr) {
+    var score = { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 };
+    for (var i = 0; i < QUESTIONS.length; i++) {
+      if (arr[i]) score[arr[i]]++;
+    }
+    return (score.E >= score.I ? 'E' : 'I') +
+           (score.S >= score.N ? 'S' : 'N') +
+           (score.T >= score.F ? 'T' : 'F') +
+           (score.J >= score.P ? 'J' : 'P');
+  }
+
+  function finishQuiz() {
+    var type = calcType(answers);
+    lastResult = type;
+    var arr = loadHistory();
+    var rec = { t: type, d: todayStr(), ts: Date.now() };
+    // 本次会话重复提交（回退改选最后一题后再次查看结果）时替换而非新增
+    if (sessionSubmitted && arr.length && arr[0].ts === lastSubmittedTs) {
+      arr[0] = rec;
+    } else {
+      arr.unshift(rec);
+      if (arr.length > 30) arr = arr.slice(0, 30);
+    }
+    saveHistory(arr);
+    lastSubmittedTs = rec.ts;
+    sessionSubmitted = true;
+    showResult(type);
+  }
+
+  function showResult(type) {
+    var info = TYPES[type];
+    lastResult = type;
+    var hero = document.getElementById('resultHero');
+    hero.style.setProperty('--c1', info.c1);
+    hero.style.setProperty('--c2', info.c2);
+    document.getElementById('resultEmoji').textContent = info.emoji;
+    document.getElementById('resultType').textContent = type;
+    document.getElementById('resultName').textContent = info.name;
+    // 描述按标点分组渲染（inline-block 整句换行），避免词组被拆断在行间
+    var descEl = document.getElementById('resultDesc');
+    var segs = info.desc.match(/[^，。！？、；：「」]+[，。！？、；：「」]?/g) || [info.desc];
+    descEl.textContent = '';
+    segs.forEach(function (s) {
+      var span = document.createElement('span');
+      span.style.display = 'inline-block';
+      span.textContent = s;
+      descEl.appendChild(span);
+    });
+    // 四个字母的含义
+    var lettersList = document.getElementById('lettersList');
+    lettersList.innerHTML = '';
+    type.split('').forEach(function (ch) {
+      var m = LETTER_MEANINGS[ch];
+      var row = document.createElement('div');
+      row.className = 'letter-row';
+      row.innerHTML = '<span class="letter-chip"></span>' +
+        '<span class="letter-body"><span class="letter-head"><b></b><i></i></span>' +
+        '<span class="letter-desc"></span></span>';
+      row.querySelector('.letter-chip').textContent = ch;
+      row.querySelector('.letter-head b').textContent = m.cn;
+      row.querySelector('.letter-head i').textContent = m.en;
+      row.querySelector('.letter-desc').textContent = m.d;
+      lettersList.appendChild(row);
+    });
+    // 清理上次的卡片
+    document.getElementById('cardImg').style.display = 'none';
+    document.getElementById('cardImg').removeAttribute('src');
+    document.getElementById('btnDownload').style.display = 'none';
+    document.getElementById('cardTip').style.display = 'none';
+    showPage('result');
+  }
+
+  /* ================= 结果卡片（Canvas） ================= */
+  function wrapText(ctx, text, maxWidth, maxLines) {
+    // 先按标点切短句，再贪心拼行，避免把连续词组拆断在行间
+    var segs = text.match(/[^，。！？、；：「」]+[，。！？、；：「」]?/g) || [text];
+    var lines = [], line = '';
+    segs.forEach(function (seg) {
+      if (ctx.measureText(line + seg).width <= maxWidth) {
+        line += seg;
+        return;
+      }
+      if (line) { lines.push(line); line = ''; }
+      // 单句仍超宽时才逐字拆分
+      if (ctx.measureText(seg).width > maxWidth) {
+        for (var i = 0; i < seg.length; i++) {
+          if (line && ctx.measureText(line + seg[i]).width > maxWidth) {
+            lines.push(line); line = seg[i];
+          } else { line += seg[i]; }
+        }
+      } else { line = seg; }
+    });
+    if (line) lines.push(line);
+    return lines.slice(0, maxLines);
+  }
+
+  function generateCard() {
+    var type = lastResult;
+    var info = TYPES[type];
+    var W = 720, H = 960;
+    var canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    var ctx = canvas.getContext('2d');
+
+    // 背景渐变
+    var g = ctx.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, info.c1); g.addColorStop(1, info.c2);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    // 装饰圆
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.beginPath(); ctx.arc(W - 60, 120, 140, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(40, H - 100, 110, 0, Math.PI * 2); ctx.fill();
+
+    var FONT = '-apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif';
+    var EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    ctx.textAlign = 'center';
+
+    // 站点名
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.font = '600 28px ' + FONT;
+    ctx.fillText('MBTI 快测', W / 2, 84);
+
+    // emoji
+    ctx.font = '110px ' + EMOJI_FONT;
+    ctx.fillText(info.emoji, W / 2, 248);
+
+    // 类型字母
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 150px ' + FONT;
+    ctx.fillText(type, W / 2, 415);
+
+    // 类型名
+    ctx.font = '700 46px ' + FONT;
+    ctx.fillText(info.name, W / 2, 490);
+
+    // 分隔线
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(W / 2 - 40, 535); ctx.lineTo(W / 2 + 40, 535); ctx.stroke();
+
+    // 描述
+    ctx.font = '400 31px ' + FONT;
+    ctx.fillStyle = 'rgba(255,255,255,0.96)';
+    var lines = wrapText(ctx, info.desc, 560, 5);
+    var y0 = 610;
+    for (var i = 0; i < lines.length; i++) {
+      ctx.fillText(lines[i], W / 2, y0 + i * 52);
+    }
+
+    // 底部：日期 + 免责
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.font = '400 26px ' + FONT;
+    ctx.fillText(todayStr() + ' · 测于 MBTI 快测', W / 2, H - 92);
+    ctx.font = '400 22px ' + FONT;
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillText('仅供娱乐 · 2 分钟认识自己', W / 2, H - 52);
+
+    var dataUrl = canvas.toDataURL('image/png');
+    var img = document.getElementById('cardImg');
+    img.src = dataUrl;
+    img.style.display = 'block';
+    document.getElementById('cardTip').style.display = 'block';
+
+    var dl = document.getElementById('btnDownload');
+    dl.onclick = function () {
+      var a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = 'MBTI快测_' + type + '.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    };
+    dl.style.display = 'block';
+    img.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  /* ================= 历史记录 ================= */
+  function renderHistory() {
+    var arr = loadHistory();
+    var list = document.getElementById('historyList');
+    var empty = document.getElementById('historyEmpty');
+    var clear = document.getElementById('btnClear');
+    list.innerHTML = '';
+    if (!arr.length) {
+      empty.style.display = 'block';
+      clear.style.display = 'none';
+      return;
+    }
+    empty.style.display = 'none';
+    clear.style.display = 'block';
+    arr.forEach(function (item) {
+      var info = TYPES[item.t];
+      if (!info) return;
+      var btn = document.createElement('button');
+      btn.className = 'h-item';
+      btn.innerHTML =
+        '<span class="h-emoji">' + info.emoji + '</span>' +
+        '<span><span class="h-type">' + item.t + '</span>' +
+        '<div class="h-name">' + info.name + '</div></span>' +
+        '<span class="h-date">' + item.d + '</span>';
+      btn.addEventListener('click', function () { showResult(item.t); });
+      list.appendChild(btn);
+    });
+  }
+
+  /* ================= 事件绑定 ================= */
+  document.getElementById('btnStart').addEventListener('click', startQuiz);
+  document.getElementById('btnGoHistory').addEventListener('click', function () {
+    renderHistory(); showPage('history');
+  });
+  document.getElementById('optA').addEventListener('click', function () { choose(0); });
+  document.getElementById('optB').addEventListener('click', function () { choose(1); });
+  document.getElementById('btnPrev').addEventListener('click', prevQuestion);
+  document.getElementById('btnNext').addEventListener('click', nextQuestion);
+  document.getElementById('btnCard').addEventListener('click', generateCard);
+  document.getElementById('btnRetake').addEventListener('click', startQuiz);
+  document.getElementById('btnBackHome').addEventListener('click', function () { showPage('home'); });
+  document.getElementById('btnBackHome2').addEventListener('click', function () { showPage('home'); });
+  document.getElementById('btnClear').addEventListener('click', function () {
+    if (window.confirm('确定清空全部历史记录吗？此操作不可恢复。')) {
+      saveHistory([]);
+      renderHistory();
+    }
+  });
+
+  // 供自动化测试使用
+  window.__mbti = { calcType: calcType, QUESTIONS: QUESTIONS, TYPES: TYPES, loadHistory: loadHistory };
+})();
+</script>
+</body>
+</html>
